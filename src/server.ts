@@ -9,4 +9,8 @@ export async function startServer() {
   });
 }
 
-startServer();
+startServer().catch((err) => {
+  // app.listen can throw an error if the port is already in use
+  console.error("[server]: Failed to start", err);
+  process.exit(1); // Exit the process with an error code
+});
