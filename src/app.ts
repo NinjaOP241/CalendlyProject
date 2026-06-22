@@ -3,6 +3,7 @@
 import express, { Express } from "express";
 import { userRouter } from "./routers/user.router.js";
 import { errorHandler } from "./middlewares/error-handler.js";
+import { routeNotFound } from "./middlewares/route-not-found.js";
 
 const app: Express = express();
 
@@ -17,6 +18,16 @@ app.get("/health", (_req, res) => {
 
 // If the route starts with /api/users, then the userRouter will handle the request
 app.use("/api/users", userRouter);
+
+/**
+ * The order of middlewares is important in Express.
+ * Express executes middleware from top to bottom.
+ *
+ * - routeNotFound middleware should be the second last middleware
+ * - errorHandler middleware should be the last middleware
+ */
+// If the request is not handled by any of the above routes, then the routeNotFound middleware will handle the request
+app.use(routeNotFound);
 
 // At the last register our custom error handler
 app.use(errorHandler);
