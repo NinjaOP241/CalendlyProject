@@ -3,7 +3,6 @@ import {
   CreateEventTypeDTO,
   UpdateEventTypeDTO,
 } from "../dtos/event-type.dto.js";
-import { notFound } from "../utils/api-error.js";
 
 export async function findByHostId(hostId: number) {
   const eventTypes = await prisma.eventType.findMany({
