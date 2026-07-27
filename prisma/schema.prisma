@@ -25,11 +25,20 @@ model User {
 }
 
 // A user has many event types, and an event type belongs to a user (one to many relationship)
+/**
+ * Example of EventType:
+ * 1. 30 minutes: Resume Review 1:1
+ * 2. 60 minutes: Software Engineering Mock Interview
+ * 3. 45 minutes: Make Your Resume Live With Me
+ * We will create multiple slots for each event type,
+ * and users can book a slot for a specific event type.
+ */
 model EventType {
   id                  Int      @id @default(autoincrement())
   hostId              Int
   title               String
   description         String?
+  slug                String
   durationMinutes     Int
   isActive            Boolean  @default(true)
   locationType        String   @default("online")
@@ -41,5 +50,6 @@ model EventType {
 
   host User @relation(fields: [hostId], references: [id], onDelete: Cascade)
 
+  @@unique([hostId, slug])
   @@map("event_types")
 }
