@@ -7,6 +7,14 @@ export const createUserSchema = z.object({
     .string()
     .min(1, "Name is required")
     .max(100, "Name must be less than 100 characters"),
+  slug: z
+    .string()
+    .max(100)
+    .regex(
+      /^[a-z0-9-]+$/,
+      "Slug may only contain lowercase letters, numbers, and hyphens",
+    )
+    .optional(),
 });
 
 // Define the schema for updating a user

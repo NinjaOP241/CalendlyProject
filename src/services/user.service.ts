@@ -8,6 +8,7 @@ import {
   update,
 } from "../repositories/user.repository.js";
 import { conflict, notFound } from "../utils/api-error.js";
+import { generateUniqueSlug, sanitizeSlug } from "../utils/slug.utils.js";
 
 export async function findAllUsers() {
   const users = await getAll();
@@ -31,7 +32,11 @@ export async function createUser(data: CreateUserDTO) {
     throw conflict("User already exists");
   }
 
-  const user = await create(data);
+  const resolvedSlug = data.slug?.trim()
+    ? sanitizeSlug(data.slug)
+    : generateUniqueSlug(data.name);
+
+  const user = await create({ ...data, slug: resolvedSlug });
   return user;
 }
 
