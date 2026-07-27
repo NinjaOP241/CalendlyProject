@@ -1,7 +1,11 @@
 // Configures the settings for the express app object
 
 import express, { Express } from "express";
+
 import { userRouter } from "./routers/user.router.js";
+import { publicEventRouter } from "./routers/public-event.router.js";
+import { eventTypeRouter } from "./routers/event-type.router.js";
+
 import { errorHandler } from "./middlewares/error-handler.js";
 import { routeNotFound } from "./middlewares/route-not-found.js";
 
@@ -18,6 +22,8 @@ app.get("/health", (_req, res) => {
 
 // If the route starts with /api/users, then the userRouter will handle the request
 app.use("/api/users", userRouter);
+app.use("/api/event-types", eventTypeRouter);
+app.use("/api/public", publicEventRouter);
 
 /**
  * The order of middlewares is important in Express.
