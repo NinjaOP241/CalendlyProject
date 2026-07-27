@@ -43,10 +43,10 @@ export async function removeEventType(req: Request, res: Response) {
 }
 
 export async function getEventTypePublic(req: Request, res: Response) {
-  const { hostId, eventSlug } = req.params;
+  const { userId, slug } = req.params;
   const eventType = await getEventTypePublicService(
-    Number(hostId),
-    String(eventSlug),
+    Number(userId),
+    String(slug),
   );
   sendSuccess(res, eventType);
 }
