@@ -26,12 +26,12 @@ export const createEventTypeSchema = z.object({
   bufferAfterMinutes: z.number().min(0).max(120).default(0),
   slug: z
     .string()
-    .min(1)
     .max(100)
     .regex(
       /^[a-z0-9-]+$/,
       "Slug may only contain lowercase letters, numbers, and hyphens",
-    ),
+    )
+    .optional(),
 });
 
 // Define the schema for updating an event type

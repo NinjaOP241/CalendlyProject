@@ -3,6 +3,7 @@ import {
   CreateEventTypeDTO,
   UpdateEventTypeDTO,
 } from "../dtos/event-type.dto.js";
+import { notFound } from "../utils/api-error.js";
 
 export async function findByHostId(hostId: number) {
   const eventTypes = await prisma.eventType.findMany({
@@ -25,7 +26,19 @@ export async function getById(id: number) {
   return eventType;
 }
 
-export async function create(hostId: number, data: CreateEventTypeDTO) {
+/**
+ * Persists a new EventType to the database.
+ *
+ * Issue: `CreateEventTypeDTO` leaves `slug` optional (`string | undefined`), but the
+ * Prisma schema requires `slug` to be a non-nullable string.
+ *
+ * Fix: The type intersection `& { slug: string }` guarantees the service layer has
+ * resolved any missing slugs before handing off the payload to the repository.
+ */
+export async function create(
+  hostId: number,
+  data: CreateEventTypeDTO & { slug: string },
+) {
   const eventType = await prisma.eventType.create({
     data: {
       ...data,
@@ -40,6 +53,7 @@ export async function update(id: number, data: UpdateEventTypeDTO) {
     where: { id },
     data,
   });
+  return eventType;
 }
 
 export async function remove(id: number) {
@@ -53,6 +67,17 @@ export async function findByHostAndSlug(hostId: number, slug: string) {
     where: {
       hostId,
       slug,
+    },
+  });
+  return eventType;
+}
+
+export async function findActiveByHostIdAndSlug(hostId: number, slug: string) {
+  const eventType = await prisma.eventType.findFirst({
+    where: {
+      hostId,
+      slug,
+      isActive: true,
     },
   });
   return eventType;
