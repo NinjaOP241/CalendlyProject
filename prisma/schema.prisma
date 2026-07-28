@@ -68,6 +68,7 @@ model AvailabilityRule {
   weekday   Int
   startTime String
   endTime   String
+  isActive  Boolean  @default(true)
   timezone  String   @default("UTC") // Central Time Zone = UTC
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -78,17 +79,23 @@ model AvailabilityRule {
   @@map("availability_rules")
 }
 
+enum AvailabilityExceptionType {
+  BLOCK_FULL_DAY
+  BLOCK_PARTIAL
+  ADD_AVAILABLE_WINDOW
+}
+
 model AvailabilityException {
-  id        Int      @id @default(autoincrement())
+  id        Int                       @id @default(autoincrement())
   userId    Int
-  date      DateTime @db.Date
-  type      String
+  date      DateTime                  @db.Date
+  type      AvailabilityExceptionType
   startTime String?
   endTime   String?
-  timezone  String   @default("UTC") // Central Time Zone = UTC
+  timezone  String                    @default("UTC") // Central Time Zone = UTC
   reason    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime                  @default(now())
+  updatedAt DateTime                  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
