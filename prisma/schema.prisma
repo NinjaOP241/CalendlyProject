@@ -54,7 +54,8 @@ model EventType {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
-  host     User      @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  host User @relation(fields: [hostId], references: [id], onDelete: Cascade)
+
   slots    Slot[]
   bookings Booking[]
 
@@ -103,23 +104,29 @@ model AvailabilityException {
   @@map("availability_exceptions")
 }
 
+enum SlotStatus {
+  AVAILABLE
+  BOOKED
+}
+
 model Slot {
-  id          Int      @id @default(autoincrement())
+  id          Int        @id @default(autoincrement())
   hostId      Int
   eventTypeId Int
-  startTime   DateTime
-  endTime     DateTime
-  status      String   @default("AVAILABLE")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  startAt     DateTime
+  endAt       DateTime
+  status      SlotStatus @default(AVAILABLE)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   host      User      @relation(fields: [hostId], references: [id], onDelete: Cascade)
   eventType EventType @relation(fields: [eventTypeId], references: [id], onDelete: Cascade)
-  bookings  Booking[]
 
-  @@unique([eventTypeId, startTime, endTime])
-  @@index([hostId, startTime])
-  @@index([eventTypeId, startTime, status])
+  bookings Booking[]
+
+  @@unique([eventTypeId, startAt, endAt])
+  @@index([hostId, startAt])
+  @@index([eventTypeId, startAt, status])
   @@map("slots")
 }
 
