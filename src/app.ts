@@ -25,7 +25,7 @@ app.get("/health", (_req, res) => {
 app.use("/api/users", userRouter);
 app.use("/api/event-types", eventTypeRouter);
 app.use("/api/public", publicEventRouter);
-app.use("api/availability", availabilityRouter);
+app.use("/api/availability", availabilityRouter);
 
 /**
  * The order of middlewares is important in Express.
