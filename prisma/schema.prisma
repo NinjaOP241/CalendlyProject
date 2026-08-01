@@ -107,6 +107,7 @@ model AvailabilityException {
 enum SlotStatus {
   AVAILABLE
   BOOKED
+  BLOCKED
 }
 
 model Slot {

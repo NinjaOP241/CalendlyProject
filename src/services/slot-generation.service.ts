@@ -270,3 +270,45 @@ export function applyExceptionForDate(
 
   return mergeWindows(windows);
 }
+
+/**
+ * Compares a specific calendar date against a general weekly database rule (e.g., "Mondays 9-5").
+ * If the calendar date is the correct day of the week, it generates a precise time block.
+ * If it is the wrong day of the week, it rejects it and returns an empty array.
+ *
+ * 1. Shifts the requested date to the host's timezone (since it might be Monday in NY, but Tuesday in Tokyo).
+ * 2. Translates standard Sunday math (0) into Luxon's Sunday math (7).
+ * 3. If the calendar date's day doesn't match the rule's day, it rejects it (returns []).
+ * 4. If approved, it uses the "parseTimeOnDate" to paste the string times onto the specific date.
+ *
+ * @example
+ * DB Rule: weekday 1 (Monday), "09:00" to "17:00"
+ * Candidate Date: Aug 5, 2026 (Wednesday) -> Result: [] (Not a Monday)
+ * Candidate Date: Aug 3, 2026 (Monday) -> Result: [ { 2026-08-03 09:00 to 17:00 } ] (Approved!)
+ *
+ * @param date - The specific calendar date the user clicked on.
+ * @param weekday - The day of the week from the DB rule (0 = Sun, 1 = Mon, etc.).
+ * @param startTime - The shift start time from the DB (e.g., "09:00").
+ * @param endTime - The shift end time from the DB (e.g., "17:00").
+ * @param timeZone - The host's configured timezone.
+ * @returns A single TimeWindow array if it's the correct day, or an empty array if not.
+ */
+export function windowsForWeekdayRule(
+  date: DateTime,
+  weekday: number,
+  startTime: string,
+  endTime: string,
+  timeZone: string,
+): TimeWindow[] {
+  const localDate = date.setZone(timeZone).startOf("day");
+  const luxonWeekday = weekday === 0 ? 7 : weekday;
+
+  if (localDate.weekday !== luxonWeekday) return [];
+
+  const start = parseTimeOnDate(date, startTime, timeZone);
+  const end = parseTimeOnDate(date, endTime, timeZone);
+
+  if (!start.isValid || !end.isValid || start >= end) return [];
+
+  return [{ start, end }];
+}
