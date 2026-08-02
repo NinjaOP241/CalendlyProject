@@ -12,9 +12,12 @@ import {
   update,
 } from "../repositories/event-type.repository.js";
 import { getById as getUserById } from "../repositories/user.repository.js";
+import { findActiveRulesByUser } from "../repositories/availability.repository.js";
 
 import { conflict, forbidden, notFound } from "../utils/api-error.js";
 import { generateUniqueSlug, sanitizeSlug } from "../utils/slug.utils.js";
+
+import { startRegenerateHostSlotsWorkflow } from "../temporal/client.js";
 
 export async function listEventTypes(hostId: number) {
   const eventTypes = await findByHostId(hostId);
@@ -25,6 +28,15 @@ export async function createEventType(
   hostId: number,
   data: CreateEventTypeDTO,
 ) {
+  // Ensure the host has at least one active availability rule before creating an event type
+  const availabilityRules = await findActiveRulesByUser(hostId);
+
+  if (availabilityRules.length === 0) {
+    throw conflict(
+      "Please create availability rules before creating an event type",
+    );
+  }
+
   // Clean custom slug if provided; otherwise generate a title-based slug + hash
   const resolvedSlug = data.slug?.trim()
     ? sanitizeSlug(data.slug)
@@ -42,7 +54,12 @@ export async function createEventType(
     );
   }
 
-  return await create(hostId, { ...data, slug: resolvedSlug });
+  const eventType = await create(hostId, { ...data, slug: resolvedSlug });
+
+  // After creating the event type, trigger the Temporal workflow to regenerate host slots
+  await startRegenerateHostSlotsWorkflow({ hostId });
+
+  return eventType;
 }
 
 export async function updateEventType(

@@ -50,7 +50,14 @@ async function startWorkflow(
   }
 }
 
-export async function regenerateHostSlotsWorkflow(
+/**
+ * Starts the regenerateHostSlotsWorkflow execution in Temporal.
+ *
+ * This function is called by the application service layer when host slots
+ * need to be regenerated. It sends a workflow start request to the Temporal
+ * server, which schedules the workflow task on the configured task queue.
+ */
+export async function startRegenerateHostSlotsWorkflow(
   input: RegenerateHostSlotsInput,
 ) {
   return await startWorkflow(
