@@ -37,6 +37,14 @@ export function parseTimeOnDate(
 }
 
 /**
+ * Returns a new array of time windows sorted by their start time in ascending order.
+ * The original input array is never mutated.
+ */
+function sortWindowsByStart(windows: TimeWindow[]): TimeWindow[] {
+  return [...windows].sort((a, b) => a.start.toMillis() - b.start.toMillis());
+}
+
+/**
  * Merges overlapping time windows into single, continuous blocks of time.
  * This fixes issues where a host accidentally enters overlapping availability.
  *
@@ -47,9 +55,7 @@ export function parseTimeOnDate(
 export function mergeWindows(windows: TimeWindow[]): TimeWindow[] {
   if (windows.length === 0) return [];
 
-  const sortedWindows = [...windows].sort(
-    (a, b) => a.start.toMillis() - b.start.toMillis(),
-  );
+  const sortedWindows = sortWindowsByStart(windows);
 
   const mergedResult: TimeWindow[] = [sortedWindows[0]];
 
@@ -123,12 +129,8 @@ export function subtractWindows(
   if (baseList.length === 0) return [];
   if (excludeList.length === 0) return baseList;
 
-  const sortedBase = [...mergeWindows(baseList)].sort(
-    (a, b) => a.start.toMillis() - b.start.toMillis(),
-  );
-  const sortedExclude = [...mergeWindows(excludeList)].sort(
-    (a, b) => a.start.toMillis() - b.start.toMillis(),
-  );
+  const sortedBase = sortWindowsByStart(mergeWindows(baseList));
+  const sortedExclude = sortWindowsByStart(mergeWindows(excludeList));
 
   const remainingWindows: TimeWindow[] = [];
   let baseIdx = 0;
