@@ -16,6 +16,7 @@ import {
   updateException as updateExceptionRepo,
   deleteException as deleteExceptionRepo,
 } from "../repositories/availability.repository.js";
+import { startRegenerateHostSlotsWorkflow } from "../temporal/client.js";
 import { forbidden, notFound } from "../utils/api-error.js";
 
 // ==========================================
@@ -30,7 +31,12 @@ export async function createRule(
   userId: number,
   data: CreateAvailabilityRuleDTO,
 ) {
-  return createRuleRepo(userId, data);
+  const createdRule = createRuleRepo(userId, data);
+
+  // After creating the availability rule, trigger the Temporal workflow to regenerate host slots
+  await startRegenerateHostSlotsWorkflow({ hostId: userId });
+
+  return createdRule;
 }
 
 export async function updateRule(
@@ -47,7 +53,12 @@ export async function updateRule(
     throw forbidden("You are not authorized to update this availability rule");
   }
 
-  return updateRuleRepo(ruleId, data);
+  const updatedRule = updateRuleRepo(ruleId, data);
+
+  // After updating the availability rule, trigger the Temporal workflow to regenerate host slots
+  await startRegenerateHostSlotsWorkflow({ hostId: userId });
+
+  return updatedRule;
 }
 
 export async function deleteRule(userId: number, ruleId: number) {
@@ -60,7 +71,12 @@ export async function deleteRule(userId: number, ruleId: number) {
     throw forbidden("You are not authorized to delete this availability rule");
   }
 
-  return deleteRuleRepo(ruleId);
+  const removedRule = deleteRuleRepo(ruleId);
+
+  // After deleting the availability rule, trigger the Temporal workflow to regenerate host slots
+  await startRegenerateHostSlotsWorkflow({ hostId: userId });
+
+  return removedRule;
 }
 
 // ==========================================
@@ -75,7 +91,12 @@ export async function createException(
   userId: number,
   data: CreateAvailabilityExceptionDTO,
 ) {
-  return createExceptionRepo(userId, data);
+  const createdException = createExceptionRepo(userId, data);
+
+  // After creating the availability exception, trigger the Temporal workflow to regenerate host slots
+  await startRegenerateHostSlotsWorkflow({ hostId: userId });
+
+  return createdException;
 }
 
 export async function updateException(
@@ -95,7 +116,12 @@ export async function updateException(
     );
   }
 
-  return updateExceptionRepo(exceptionId, data);
+  const updatedException = updateExceptionRepo(exceptionId, data);
+
+  // After updating the availability exception, trigger the Temporal workflow to regenerate host slots
+  await startRegenerateHostSlotsWorkflow({ hostId: userId });
+
+  return updatedException;
 }
 
 export async function deleteException(userId: number, exceptionId: number) {
@@ -110,5 +136,10 @@ export async function deleteException(userId: number, exceptionId: number) {
     );
   }
 
-  return deleteExceptionRepo(exceptionId);
+  const removedException = deleteExceptionRepo(exceptionId);
+
+  // After deleting the availability exception, trigger the Temporal workflow to regenerate host slots
+  await startRegenerateHostSlotsWorkflow({ hostId: userId });
+
+  return removedException;
 }

@@ -54,7 +54,7 @@ export async function createEventType(
     );
   }
 
-  const eventType = await create(hostId, { ...data, slug: resolvedSlug });
+  const eventType = create(hostId, { ...data, slug: resolvedSlug });
 
   // After creating the event type, trigger the Temporal workflow to regenerate host slots
   await startRegenerateHostSlotsWorkflow({ hostId });
@@ -85,7 +85,12 @@ export async function updateEventType(
     }
   }
 
-  return update(id, data);
+  const updatedEventType = update(id, data);
+
+  // After updating the event type, trigger the Temporal workflow to regenerate host slots
+  await startRegenerateHostSlotsWorkflow({ hostId });
+
+  return updatedEventType;
 }
 
 export async function removeEventType(hostId: number, id: number) {
@@ -97,7 +102,13 @@ export async function removeEventType(hostId: number, id: number) {
   if (eventType.hostId !== hostId) {
     throw forbidden("You are not authorized to delete this event type");
   }
-  return await remove(id);
+
+  const removedEventType = remove(id);
+
+  // After removing the event type, trigger the Temporal workflow to regenerate host slots
+  await startRegenerateHostSlotsWorkflow({ hostId });
+
+  return removedEventType;
 }
 
 /**
