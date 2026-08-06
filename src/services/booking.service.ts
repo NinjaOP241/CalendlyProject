@@ -1,7 +1,14 @@
 import { Slot } from "../../generated/prisma/client.js";
 import { BookingStatus, SlotStatus } from "../../generated/prisma/enums.js";
-import { CreateBookingDTO } from "../dtos/booking.dto.js";
-import { createBooking } from "../repositories/booking.repository.js";
+import {
+  CreateBookingDTO,
+  ListHostBookingQueryDTO,
+} from "../dtos/booking.dto.js";
+import {
+  createBooking,
+  findHostBookings,
+} from "../repositories/booking.repository.js";
+import { getById as getUserByIdRepo } from "../repositories/user.repository.js";
 import { runInTransaction } from "../repositories/db-client.js";
 import {
   findSlotById,
@@ -9,20 +16,54 @@ import {
   markSlotBooked,
   markSlotBookedIfAvailable,
 } from "../repositories/slot.repository.js";
-import { badRequest, conflict, notFound } from "../utils/api-error.js";
+import { startRegenerateHostSlotsWorkflow } from "../temporal/client.js";
+import {
+  badRequest,
+  conflict,
+  forbidden,
+  notFound,
+} from "../utils/api-error.js";
+import { DateTime } from "luxon";
+
+/**
+ * @param hostId - The ID of the host for whom the slot regeneration is triggered
+ * @param slotStartAt - The start time of the slot that was booked
+ *
+ * Example of date formatting:
+ * If slotStartAt is "2024-06-15T14:30:00Z", the date extracted will be "2024-06-15".
+ * This date is then used to trigger the slot regeneration workflow for that specific day.
+ */
+async function triggerSlotRegeneration(hostId: number, slotStartAt: Date) {
+  const date = slotStartAt.toISOString().split("T")[0];
+  await startRegenerateHostSlotsWorkflow({
+    hostId,
+    from: date,
+    to: date,
+  });
+
+  console.log(
+    `[booking] Triggering slot regeneration for host ${hostId} on ${date}`,
+  );
+}
 
 /**
  * Validates the slot
  *
  * @param slot - The retrieved slot entity or null if not found
+ * @param hostId - The ID of the host the booking is intended for
  * @returns The validated slot entity
  * @throws NotFoundError if the slot does not exist
+ * @throws ForbiddenError if the slot belongs to a different host
  * @throws ConflictError if the slot is no longer available
  * @throws BadRequestError if the slot start time has already passed
  */
-function validateSlotForBooking(slot: Slot | null): Slot {
+function validateSlotForBooking(slot: Slot | null, hostId: number): Slot {
   if (!slot) {
     throw notFound("Slot not found");
+  }
+
+  if (slot.hostId !== hostId) {
+    throw forbidden("You are not authorized to create a booking for this slot");
   }
 
   if (slot.status !== SlotStatus.AVAILABLE) {
@@ -88,6 +129,7 @@ export async function createBookingOptimistically(
     // Step 1: Find the slot using transaction-scoped client and validate the slot
     const slot = validateSlotForBooking(
       await findSlotById(bookingData.slotId, tx),
+      userId,
     );
 
     // Step 2: Optimisitically try to book the slot
@@ -111,6 +153,8 @@ export async function createBookingOptimistically(
       tx,
     );
   });
+
+  await triggerSlotRegeneration(userId, booking.slot.startAt);
 
   return formatBookingResponse(booking);
 }
@@ -137,6 +181,7 @@ export async function createBookingPessimistically(
     // Step 1: Lock row and fetch slot simultaneously
     const slot = validateSlotForBooking(
       await lockAndFetchSlot(bookingData.slotId, tx),
+      userId,
     );
 
     // Step 2: Update slot state to booked
@@ -156,5 +201,59 @@ export async function createBookingPessimistically(
     );
   });
 
+  await triggerSlotRegeneration(userId, booking.slot.startAt);
+
   return formatBookingResponse(booking);
+}
+
+function formatBookingListItem(booking: {
+  id: number;
+  status: string;
+  inviteeEmail: string;
+  inviteeName: string;
+  inviteeNotes: string | null;
+  slot: { startAt: Date; endAt: Date };
+  eventType: { id: number; title: string; slug: string };
+}) {
+  return {
+    id: booking.id,
+    status: booking.status,
+    inviteeEmail: booking.inviteeEmail,
+    inviteeName: booking.inviteeName,
+    inviteeNotes: booking.inviteeNotes,
+    startAt: booking.slot.startAt.toISOString(),
+    endAt: booking.slot.endAt.toISOString(),
+    eventType: booking.eventType,
+  };
+}
+
+export async function listHostBookings(
+  hostId: number,
+  query: ListHostBookingQueryDTO,
+) {
+  const host = await getUserByIdRepo(hostId);
+
+  if (!host) {
+    throw notFound("User not found");
+  }
+
+  const timezone = host.timezone;
+
+  const from = query.from
+    ? DateTime.fromISO(query.from, { zone: timezone }).startOf("day").toJSDate()
+    : undefined;
+
+  const to = query.to
+    ? DateTime.fromISO(query.to, { zone: timezone }).endOf("day").toJSDate()
+    : undefined;
+
+  const bookings = await findHostBookings(hostId, {
+    status: query.status,
+    from,
+    to,
+  });
+
+  return {
+    bookings: bookings.map(formatBookingListItem),
+  };
 }
