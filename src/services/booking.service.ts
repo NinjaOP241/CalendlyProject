@@ -2,7 +2,7 @@ import { Slot } from "../../generated/prisma/client.js";
 import { BookingStatus, SlotStatus } from "../../generated/prisma/enums.js";
 import {
   CreateBookingDTO,
-  ListHostBookingQueryDTO,
+  ListHostBookingsQueryDTO,
 } from "../dtos/booking.dto.js";
 import {
   createBooking,
@@ -229,7 +229,7 @@ function formatBookingListItem(booking: {
 
 export async function listHostBookings(
   hostId: number,
-  query: ListHostBookingQueryDTO,
+  query: ListHostBookingsQueryDTO,
 ) {
   const host = await getUserByIdRepo(hostId);
 

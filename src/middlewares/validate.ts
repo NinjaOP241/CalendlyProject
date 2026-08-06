@@ -38,6 +38,6 @@ export const validateQuery =
       throw badRequest("Validation failed", result.error.issues);
     }
 
-    req.query = result.data as Request["query"];
+    req.validatedQuery = result.data;
     next();
   };

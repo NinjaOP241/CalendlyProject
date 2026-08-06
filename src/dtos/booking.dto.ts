@@ -13,7 +13,7 @@ export const createBookingSchema = z.object({
   inviteeNotes: z.string().optional(),
 });
 
-export const listHostBookingQuerySchema = z.object({
+export const listHostBookingsQuerySchema = z.object({
   status: z.enum(BookingStatus).optional(),
   from: z
     .string()
@@ -23,6 +23,6 @@ export const listHostBookingQuerySchema = z.object({
 });
 
 export type CreateBookingDTO = z.infer<typeof createBookingSchema>;
-export type ListHostBookingQueryDTO = z.infer<
-  typeof listHostBookingQuerySchema
+export type ListHostBookingsQueryDTO = z.infer<
+  typeof listHostBookingsQuerySchema
 >;
