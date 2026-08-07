@@ -16,7 +16,10 @@ import {
   markSlotBooked,
   markSlotBookedIfAvailable,
 } from "../repositories/slot.repository.js";
-import { startRegenerateHostSlotsWorkflow } from "../temporal/client.js";
+import {
+  startRegenerateHostSlotsWorkflow,
+  startSendBookingConfirmationEmailWorkflow,
+} from "../temporal/client.js";
 import {
   badRequest,
   conflict,
@@ -103,6 +106,18 @@ function formatBookingResponse(booking: {
   };
 }
 
+async function postBookingActions(booking: {
+  id: number;
+  hostId: number;
+  status: BookingStatus;
+  slot: { startAt: Date; endAt: Date };
+}) {
+  await triggerSlotRegeneration(booking.hostId, booking.slot.startAt);
+  await startSendBookingConfirmationEmailWorkflow(booking.id);
+
+  return formatBookingResponse(booking);
+}
+
 /**
  * OPTIMISTIC CONCURRENCY CONTROL (OCC) WORKFLOW
  *
@@ -154,9 +169,7 @@ export async function createBookingOptimistically(
     );
   });
 
-  await triggerSlotRegeneration(userId, booking.slot.startAt);
-
-  return formatBookingResponse(booking);
+  return postBookingActions(booking);
 }
 
 /**
@@ -201,9 +214,7 @@ export async function createBookingPessimistically(
     );
   });
 
-  await triggerSlotRegeneration(userId, booking.slot.startAt);
-
-  return formatBookingResponse(booking);
+  return postBookingActions(booking);
 }
 
 function formatBookingListItem(booking: {

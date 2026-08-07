@@ -1,4 +1,4 @@
-import { TEMPORAL_TASK_QUEUE } from "../config/env.js";
+import { TASK_QUEUES } from "../config/env.js";
 import { getTemporalClient, isTemporalHealthy } from "../config/temporal.js";
 import { RegenerateHostSlotsInput } from "../services/slot.service.js";
 
@@ -6,6 +6,7 @@ async function startWorkflow(
   workflowName: string,
   workflowId: string,
   args: unknown[],
+  taskQueue: string,
 ) {
   // Check if Temporal is healthy before attempting to start the workflow
   if (!isTemporalHealthy()) {
@@ -36,7 +37,7 @@ async function startWorkflow(
 
     // Start the workflow with the provided name, ID, and arguments
     const handle = await client.workflow.start(workflowName, {
-      taskQueue: TEMPORAL_TASK_QUEUE,
+      taskQueue,
       workflowId,
       args,
     });
@@ -64,5 +65,17 @@ export async function startRegenerateHostSlotsWorkflow(
     "regenerateHostSlotsWorkflow",
     `regenerate-host-slots-${input.hostId}-${Date.now()}`,
     [input],
+    TASK_QUEUES.SLOT_GENERATION,
+  );
+}
+
+export async function startSendBookingConfirmationEmailWorkflow(
+  bookingId: number,
+) {
+  return await startWorkflow(
+    "sendBookingConfirmationEmailWorkflow",
+    `send-booking-confirmation-email-${bookingId}-${Date.now()}`,
+    [bookingId],
+    TASK_QUEUES.NOTIFICATIONS,
   );
 }

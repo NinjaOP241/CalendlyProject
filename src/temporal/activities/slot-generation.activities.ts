@@ -5,7 +5,6 @@ import {
 
 export async function regenerateHostSlotsActivity(
   input: RegenerateHostSlotsInput,
-) {
-  // Call the actual service function to regenerate host slots
+): Promise<void> {
   await runSlotGeneration(input);
 }

@@ -1,10 +1,10 @@
 import { NativeConnection, Worker } from "@temporalio/worker";
-import * as activities from "./activities/index.js";
+import * as slotActivities from "../activities/slot-generation.activities.js";
 import {
   TEMPORAL_ADDRESS,
   TEMPORAL_NAMESPACE,
-  TEMPORAL_TASK_QUEUE,
-} from "../config/env.js";
+  TASK_QUEUES,
+} from "../../config/env.js";
 import { fileURLToPath } from "url";
 
 async function run() {
@@ -20,20 +20,20 @@ async function run() {
   const worker = await Worker.create({
     connection,
     namespace: TEMPORAL_NAMESPACE,
-    taskQueue: TEMPORAL_TASK_QUEUE,
-    activities: activities,
+    taskQueue: TASK_QUEUES.SLOT_GENERATION,
+    activities: slotActivities,
     workflowsPath: fileURLToPath(
-      new URL("./workflows/index.ts", import.meta.url),
-    ), // Path to the compiled workflows file
+      new URL("../workflows/slot-generation.workflow.ts", import.meta.url),
+    ),
   });
 
   console.log(
-    `[temporal] Worker started, listening to task queue: ${TEMPORAL_TASK_QUEUE}`,
+    `[temporal] Slot Worker listening on: ${TASK_QUEUES.SLOT_GENERATION}`,
   );
   await worker.run(); // Start the worker to listen for tasks
 }
 
 run().catch((err) => {
-  console.error("[temporal] Worker failed to start", err);
+  console.error("[temporal] Slot Worker failed to start", err);
   process.exit(1); // Exit the process with an error code if the worker fails to start
 });
