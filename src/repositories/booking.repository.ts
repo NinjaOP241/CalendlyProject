@@ -77,3 +77,16 @@ export async function findBookingById(bookingId: number) {
     },
   });
 }
+
+export async function cancelBooking(bookingId: number, db?: DbClient) {
+  const client = getDbClient(db);
+
+  return client.booking.update({
+    where: {
+      id: bookingId,
+    },
+    data: {
+      status: BookingStatus.CANCELLED,
+    },
+  });
+}

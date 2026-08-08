@@ -2,9 +2,10 @@ import { proxyActivities } from "@temporalio/workflow";
 import type * as activities from "../activities/booking-notification.activities.js";
 
 // Create a proxy for the activities to be used in the workflow
-const { sendBookingConfirmationEmailActivity } = proxyActivities<
-  typeof activities
->({
+const {
+  sendBookingConfirmationEmailActivity,
+  sendBookingCancellationEmailActivity,
+} = proxyActivities<typeof activities>({
   retry: { maximumAttempts: 3 }, // Retry up to 3 times in case of failure
   startToCloseTimeout: "10 minutes", // Set a timeout for the activity execution
 });
@@ -22,4 +23,8 @@ const { sendBookingConfirmationEmailActivity } = proxyActivities<
  */
 export async function sendBookingConfirmationEmailWorkflow(bookingId: number) {
   await sendBookingConfirmationEmailActivity(bookingId);
+}
+
+export async function sendBookingCancellationEmailWorkflow(bookingId: number) {
+  await sendBookingCancellationEmailActivity(bookingId);
 }

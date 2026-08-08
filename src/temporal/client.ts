@@ -79,3 +79,14 @@ export async function startSendBookingConfirmationEmailWorkflow(
     TASK_QUEUES.NOTIFICATIONS,
   );
 }
+
+export async function startSendBookingCancellationEmailWorkflow(
+  bookingId: number,
+) {
+  return await startWorkflow(
+    "sendBookingCancellationEmailWorkflow",
+    `send-booking-cancellation-email-${bookingId}-${Date.now()}`,
+    [bookingId],
+    TASK_QUEUES.NOTIFICATIONS,
+  );
+}

@@ -9,6 +9,7 @@ import {
   createBookingSchema,
   listHostBookingsQuerySchema,
 } from "../dtos/booking.dto.js";
+import { cancelBooking } from "../controllers/booking.controller.js";
 
 export const bookingRouter: Router = Router();
 
@@ -20,3 +21,4 @@ bookingRouter.get(
   listHostBookings,
 );
 bookingRouter.post("/", validate(createBookingSchema), createBooking);
+bookingRouter.post("/:bookingId/cancel", cancelBooking);

@@ -18,3 +18,20 @@ export async function sendBookingConfirmationEmail(bookingId: number) {
     `,
   );
 }
+
+export async function sendBookingCancellationEmail(bookingId: number) {
+  const booking = await findBookingById(bookingId);
+
+  if (!booking || booking.status !== BookingStatus.CANCELLED) return;
+
+  const when = booking.slot.startAt.toUTCString();
+  await sendEmail(
+    booking.inviteeEmail,
+    `Booking Cancellation : ${bookingId}`,
+    `
+    <p>Hello ${booking.inviteeName},</p>
+    <p>Your booking for ${booking.eventType.title} on ${when} has been cancelled.</p>
+    <p>We’re sorry to see you go.</p>
+    `,
+  );
+}

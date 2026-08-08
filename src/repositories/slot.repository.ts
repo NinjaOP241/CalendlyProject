@@ -104,6 +104,18 @@ export async function markSlotBooked(id: string, db?: DbClient) {
   });
 }
 
+export async function markSlotAvailable(id: string, db?: DbClient) {
+  const client = getDbClient(db);
+  return client.slot.update({
+    where: {
+      id,
+    },
+    data: {
+      status: SlotStatus.AVAILABLE,
+    },
+  });
+}
+
 export async function lockAndFetchSlot(id: string, db?: DbClient) {
   const client = getDbClient(db);
 

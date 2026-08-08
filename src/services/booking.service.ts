@@ -6,6 +6,8 @@ import {
 } from "../dtos/booking.dto.js";
 import {
   createBooking,
+  cancelBooking as cancelBookingRepo,
+  findBookingById,
   findHostBookings,
 } from "../repositories/booking.repository.js";
 import { getById as getUserByIdRepo } from "../repositories/user.repository.js";
@@ -13,11 +15,13 @@ import { runInTransaction } from "../repositories/db-client.js";
 import {
   findSlotById,
   lockAndFetchSlot,
+  markSlotAvailable,
   markSlotBooked,
   markSlotBookedIfAvailable,
 } from "../repositories/slot.repository.js";
 import {
   startRegenerateHostSlotsWorkflow,
+  startSendBookingCancellationEmailWorkflow,
   startSendBookingConfirmationEmailWorkflow,
 } from "../temporal/client.js";
 import {
@@ -266,5 +270,37 @@ export async function listHostBookings(
 
   return {
     bookings: bookings.map(formatBookingListItem),
+  };
+}
+
+export async function cancelBooking(hostId: number, bookingId: number) {
+  const cancelledBooking = await runInTransaction(async (tx) => {
+    const booking = await findBookingById(bookingId);
+
+    if (!booking) {
+      throw notFound("Booking not found");
+    }
+
+    if (booking.status === BookingStatus.CANCELLED) {
+      throw badRequest("Booking is already cancelled");
+    }
+
+    if (booking.hostId !== hostId) {
+      throw forbidden("You are not authorized to cancel this booking");
+    }
+
+    const updatedBooking = await cancelBookingRepo(bookingId);
+
+    await markSlotAvailable(booking.slot.id, tx);
+
+    return updatedBooking;
+  });
+
+  await startSendBookingCancellationEmailWorkflow(bookingId);
+
+  return {
+    id: cancelledBooking.id,
+    status: cancelledBooking.status,
+    canceledAt: cancelledBooking.canceledAt,
   };
 }
