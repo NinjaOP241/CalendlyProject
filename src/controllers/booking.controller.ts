@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { createBookingPessimistically } from "../services/booking.service.js";
+import { createBookingOptimistically } from "../services/booking.service.js";
 import {
   listHostBookings as listHostBookingsServices,
   cancelBooking as cancelBookingService,
@@ -16,7 +16,7 @@ export async function listHostBookings(req: Request, res: Response) {
 }
 
 export async function createBooking(req: Request, res: Response) {
-  const booking = await createBookingPessimistically(req.userId, req.body);
+  const booking = await createBookingOptimistically(req.userId, req.body);
   sendSuccess(res, booking, 201, "Booking created successfully");
 }
 
