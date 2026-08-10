@@ -13,7 +13,8 @@
     "prisma:migrate": "npx prisma migrate dev",
     "prisma:generate": "npx prisma generate",
     "prisma:all": "npm run prisma:format && npm run prisma:migrate && npm run prisma:generate",
-    "prisma:studio": "npx prisma studio"
+    "prisma:studio": "npx prisma studio",
+    "google:setup": "tsx src/utils/google-setup.ts"
   },
   "keywords": [],
   "author": "",
@@ -28,6 +29,7 @@
     "@temporalio/workflow": "^1.21.1",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "googleapis": "^174.0.1",
     "luxon": "^3.7.2",
     "nanoid": "^6.0.0",
     "nodemailer": "^9.0.4",
