@@ -15,6 +15,7 @@ export const TASK_QUEUES = {
   NOTIFICATIONS:
     process.env.TEMPORAL_NOTIFICATION_TASK_QUEUE ||
     "calendly.notifications.email",
+  GOOGLE_CALENDAR: process.env.TEMPORAL_GCAL_TASK_QUEUE || "calendly.gcal",
 } as const;
 
 export const SMTP_HOST = process.env.SMTP_HOST || "localhost";
@@ -30,3 +31,9 @@ export const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
 export const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || "";
 export const GOOGLE_SENDER_EMAIL =
   process.env.GOOGLE_SENDER_EMAIL || "info@example.com";
+export const GOOGLE_CALENDAR_ID = process.env.GOOGLE_CALENDAR_ID || "primary";
+
+export const REDIS_HOST = process.env.REDIS_HOST || "localhost";
+export const REDIS_PORT = process.env.REDIS_PORT || 6379;
+export const REDIS_URL =
+  process.env.REDIS_URL || `redis://${REDIS_HOST}:${REDIS_PORT}`;

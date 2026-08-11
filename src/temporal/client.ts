@@ -90,3 +90,14 @@ export async function startSendBookingCancellationEmailWorkflow(
     TASK_QUEUES.NOTIFICATIONS,
   );
 }
+
+export async function startCreateGoogleCalendarEventWorkflow(
+  bookingId: number,
+) {
+  return await startWorkflow(
+    "createGoogleCalendarEventWorkflow",
+    `create-google-calendar-event-${bookingId}-${Date.now()}`,
+    [bookingId],
+    TASK_QUEUES.GOOGLE_CALENDAR,
+  );
+}

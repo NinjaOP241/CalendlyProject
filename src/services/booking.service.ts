@@ -20,6 +20,7 @@ import {
   markSlotBookedIfAvailable,
 } from "../repositories/slot.repository.js";
 import {
+  startCreateGoogleCalendarEventWorkflow,
   startRegenerateHostSlotsWorkflow,
   startSendBookingCancellationEmailWorkflow,
   startSendBookingConfirmationEmailWorkflow,
@@ -118,6 +119,7 @@ async function postBookingActions(booking: {
 }) {
   await triggerSlotRegeneration(booking.hostId, booking.slot.startAt);
   await startSendBookingConfirmationEmailWorkflow(booking.id);
+  await startCreateGoogleCalendarEventWorkflow(booking.id);
 
   return formatBookingResponse(booking);
 }

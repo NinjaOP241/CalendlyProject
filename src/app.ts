@@ -10,6 +10,7 @@ import { bookingRouter } from "./routers/booking.router.js";
 
 import { errorHandler } from "./middlewares/error-handler.js";
 import { routeNotFound } from "./middlewares/route-not-found.js";
+import { googleIntegrationRouter } from "./routers/google.router.js";
 
 const app: Express = express();
 
@@ -28,6 +29,7 @@ app.use("/api/event-types", eventTypeRouter);
 app.use("/api/public", publicEventRouter);
 app.use("/api/availability", availabilityRouter);
 app.use("/api/booking", bookingRouter);
+app.use("/api/integrations/google", googleIntegrationRouter);
 
 /**
  * The order of middlewares is important in Express.

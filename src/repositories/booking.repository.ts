@@ -90,3 +90,18 @@ export async function cancelBooking(bookingId: number, db?: DbClient) {
     },
   });
 }
+
+export async function updateBookingCalendarDetails(
+  bookingId: number,
+  data: {
+    meetLink: string;
+    calendarEventId: string;
+  },
+) {
+  return prisma.booking.update({
+    where: {
+      id: bookingId,
+    },
+    data,
+  });
+}
