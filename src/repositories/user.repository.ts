@@ -41,3 +41,17 @@ export async function remove(id: number) {
   });
   return user;
 }
+
+export async function updateGoogleRefreshToken(
+  userId: number,
+  refreshToken: string,
+) {
+  return await prisma.user.update({
+    where: {
+      id: userId,
+    },
+    data: {
+      googleRefreshToken: refreshToken,
+    },
+  });
+}

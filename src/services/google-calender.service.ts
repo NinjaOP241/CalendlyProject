@@ -14,7 +14,9 @@ import {
 import { redis } from "../config/redis.js";
 import { RedisKeys } from "../utils/redis-keys.js";
 import { findBookingById } from "../repositories/booking.repository.js";
+import { updateGoogleRefreshToken } from "../repositories/user.repository.js";
 import { BookingStatus } from "../../generated/prisma/enums.js";
+import { findById as findUserById } from "./user.service.js";
 
 const SCOPES = [
   "https://www.googleapis.com/auth/calendar",
@@ -60,13 +62,13 @@ export function getGoogleOAuth2Client(): InstanceType<
  * Using that authorization code, the application server can request for access and refresh tokens
  * from Google, which can be used to make requests to the Google Calendar API on behalf of the user.
  */
-export function getSetupAuthUrl() {
+export function getSetupAuthUrl(userId: number) {
   const client = getGoogleOAuth2Client();
   const authUrl = client.generateAuthUrl({
     access_type: "offline",
     prompt: "consent",
     scope: SCOPES,
-    state: "setup",
+    state: userId.toString(),
   });
   return authUrl;
 }
@@ -77,14 +79,14 @@ export function getSetupAuthUrl() {
  * We need to exchange that authorization code for access and refresh tokens,
  * which can be used to make requests to the Google Calendar API on behalf of the user.
  */
-export async function exchangeSetupCode(code: string) {
+export async function exchangeSetupCode(code: string, userId: number) {
   const client = getGoogleOAuth2Client();
 
   // This will provide an object with the access_token and refresh_token.
   const { tokens } = await client.getToken(code);
 
   if (!tokens.refresh_token) {
-    throw new Error("No refresh token found");
+    throw badRequest("No refresh token found");
   }
 
   client.setCredentials(tokens);
@@ -98,7 +100,12 @@ export async function exchangeSetupCode(code: string) {
   // Get the user's information using the oauth2 object
   const { data } = await oauth2.userinfo.get();
 
-  // TODO: Store the refresh token in redis and DB
+  console.log(`Exchange code for user with userId: ${userId}`);
+
+  updateGoogleRefreshToken(userId, tokens.refresh_token);
+
+  const redisKey = RedisKeys.googleCalendarRefreshToken(userId);
+  await redis.set(redisKey, tokens.refresh_token);
 
   return {
     refreshToken: tokens.refresh_token,
@@ -106,24 +113,38 @@ export async function exchangeSetupCode(code: string) {
   };
 }
 
-export function getGoogleCalendarClient(): InstanceType<
-  typeof google.auth.OAuth2
-> {
+export async function getGoogleCalendarClient(
+  userId: number,
+): Promise<InstanceType<typeof google.auth.OAuth2>> {
   if (!isProjectCalendarConfigured()) {
     throw internalServerError("Google Project Calendar is not configured");
   }
 
   const client = getGoogleOAuth2Client();
+  const redisKey = RedisKeys.googleCalendarRefreshToken(userId);
 
-  /**
-   * TODO:
-   * 1. Get the refresh token from the redis, if failed then get it from the DB
-   * 2. set credentials with the refresh token to the client object
-   */
+  let refreshToken = await redis.get(redisKey);
 
-  // Hard coding the GOOGLE_REFRESH_TOKEN for testing
+  if (!refreshToken) {
+    const user = await findUserById(userId);
+
+    if (!user) {
+      throw notFound("User not found");
+    }
+
+    if (!user.googleRefreshToken) {
+      throw badRequest(
+        "Google Calendar integration not connected for this user",
+      );
+    }
+
+    refreshToken = user.googleRefreshToken;
+
+    await redis.set(redisKey, refreshToken);
+  }
+
   client.setCredentials({
-    refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+    refresh_token: refreshToken,
   });
   return client;
 }
@@ -139,7 +160,7 @@ export async function createGoogleCalendarEvent(bookingId: number) {
     throw badRequest(`Booking is not confirmed`);
   }
 
-  const client = getGoogleCalendarClient();
+  const client = await getGoogleCalendarClient(booking.hostId);
 
   const calendar = google.calendar({ version: "v3", auth: client });
 
@@ -185,7 +206,7 @@ export async function createGoogleCalendarEvent(bookingId: number) {
   const calendarEventId = response.data.id;
 
   if (!calendarEventId || !meetLink) {
-    throw new Error("Failed to create Google Calendar event");
+    throw internalServerError("Failed to create Google Calendar event");
   }
 
   return {

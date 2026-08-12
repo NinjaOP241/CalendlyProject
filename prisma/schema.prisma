@@ -13,13 +13,14 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
-  name      String
-  slug      String   @unique
-  timezone  String   @default("UTC") // Central Time Zone = UTC
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                 Int      @id @default(autoincrement())
+  email              String   @unique
+  name               String
+  slug               String   @unique
+  timezone           String   @default("UTC") // Central Time Zone = UTC
+  googleRefreshToken String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   eventTypes             EventType[]
   availabilityRules      AvailabilityRule[]
