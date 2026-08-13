@@ -16,7 +16,7 @@ model User {
   id                 Int      @id @default(autoincrement())
   email              String   @unique
   name               String
-  slug               String   @unique
+  handle             String   @unique
   timezone           String   @default("UTC") // Central Time Zone = UTC
   googleRefreshToken String?
   createdAt          DateTime @default(now())

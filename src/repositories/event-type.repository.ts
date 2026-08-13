@@ -103,3 +103,10 @@ export async function findActiveEventTypesByHost(hostId: number) {
   });
   return eventTypes;
 }
+
+export async function getEventTypeWithHighestId() {
+  return await prisma.eventType.findFirst({
+    orderBy: { id: "desc" },
+    select: { id: true },
+  });
+}

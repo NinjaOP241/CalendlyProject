@@ -6,13 +6,14 @@ export const createUserSchema = z.object({
   name: z
     .string()
     .min(1, "Name is required")
-    .max(100, "Name must be less than 100 characters"),
-  slug: z
+    .max(40, "Name must be at most 40 characters"),
+  handle: z
     .string()
-    .max(100)
+    .min(3, "Handle must be at least 3 characters")
+    .max(60, "Handle must be at most 60 characters")
     .regex(
-      /^[a-z0-9-]+$/,
-      "Slug may only contain lowercase letters, numbers, and hyphens",
+      /^[a-zA-Z0-9_-]+$/,
+      "Handle can only contain letters, numbers, underscores, and hyphens",
     )
     .optional(),
 });
@@ -23,12 +24,22 @@ export const updateUserSchema = z
     email: z.email("Invalid email address").optional(),
     name: z
       .string()
-      .min(1, "Name is required")
-      .max(100, "Name must be less than 100 characters")
+      .min(1, "Name cannot be empty")
+      .max(40, "Name must be at most 40 characters")
+      .optional(),
+    handle: z
+      .string()
+      .min(3, "Handle must be at least 3 characters")
+      .max(60, "Handle must be at most 60 characters")
+      .regex(
+        /^[a-zA-Z0-9_-]+$/,
+        "Handle can only contain letters, numbers, underscores, and hyphens",
+      )
       .optional(),
   })
-  .refine((data) => data.email || data.name, {
-    message: "At least one field must be provided",
+  .refine((data) => data.email || data.name || data.handle, {
+    message:
+      "At least one field (email, name, or handle) must be provided for update",
   });
 
 // Create a TypeScript type from the Zod schema

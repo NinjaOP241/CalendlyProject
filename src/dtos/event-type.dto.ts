@@ -8,7 +8,7 @@ import { z } from "zod";
 
 // Define the schema for creating an event type
 export const createEventTypeSchema = z.object({
-  title: z.string().min(1).max(200),
+  title: z.string().min(1).max(200, "Title must be at most 200 characters"),
   description: z.string().max(1000).optional(),
   durationMinutes: z
     .union([
@@ -26,7 +26,8 @@ export const createEventTypeSchema = z.object({
   bufferAfterMinutes: z.number().min(0).max(120).default(0),
   slug: z
     .string()
-    .max(100)
+    .min(1, "Slug cannot be empty")
+    .max(120, "Slug must be at most 120 characters")
     .regex(
       /^[a-z0-9-]+$/,
       "Slug may only contain lowercase letters, numbers, and hyphens",

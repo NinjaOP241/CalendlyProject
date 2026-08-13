@@ -7,6 +7,7 @@ import {
   findActiveByHostIdAndSlug,
   findByHostId,
   getById,
+  getEventTypeWithHighestId,
   remove,
   slugExistsForHost,
   update,
@@ -15,13 +16,25 @@ import { getById as getUserById } from "../repositories/user.repository.js";
 import { findActiveRulesByUser } from "../repositories/availability.repository.js";
 
 import { conflict, forbidden, notFound } from "../utils/api-error.js";
-import { generateUniqueSlug, sanitizeSlug } from "../utils/slug.utils.js";
 
 import { startRegenerateHostSlotsWorkflow } from "../temporal/client.js";
+import { normalizeToSlug } from "../utils/normalize.utils.js";
+import { encodeBase62 } from "../utils/base62.js";
 
 export async function listEventTypes(hostId: number) {
   const eventTypes = await findByHostId(hostId);
   return eventTypes;
+}
+
+async function createUniqueEventTypeSlug(userId: number, title: string) {
+  const baseSlug = normalizeToSlug(title);
+
+  const lastEventType = await getEventTypeWithHighestId();
+
+  const nextId = (lastEventType?.id ?? 0) + 1;
+  const hash = encodeBase62(nextId);
+
+  return `${baseSlug}-${hash}`;
 }
 
 export async function createEventType(
@@ -37,21 +50,19 @@ export async function createEventType(
     );
   }
 
-  // Clean custom slug if provided; otherwise generate a title-based slug + hash
-  const resolvedSlug = data.slug?.trim()
-    ? sanitizeSlug(data.slug)
-    : generateUniqueSlug(data.title);
-
-  if (!resolvedSlug) {
-    throw conflict("Could not generate a slug for the event type");
+  let resolvedSlug = "";
+  if (data.slug) {
+    const isSlugTaken = await slugExistsForHost(hostId, data.slug);
+    if (isSlugTaken) {
+      throw conflict(
+        "An event type with this slug already exists, please use a different slug",
+      );
+    }
+    resolvedSlug = data.slug;
   }
 
-  const isSlugTaken = await slugExistsForHost(hostId, resolvedSlug);
-
-  if (isSlugTaken) {
-    throw conflict(
-      "An event type with this slug already exists, please use a different slug",
-    );
+  if (!resolvedSlug) {
+    resolvedSlug = await createUniqueEventTypeSlug(hostId, data.title);
   }
 
   const eventType = create(hostId, { ...data, slug: resolvedSlug });

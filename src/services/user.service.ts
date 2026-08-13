@@ -2,13 +2,16 @@ import { CreateUserDTO, UpdateUserDTO } from "../dtos/user.dto.js";
 import {
   create,
   findByEmail,
+  findByHandle,
   getAll,
   getById,
+  getUserWithHighestId,
   remove,
   update,
 } from "../repositories/user.repository.js";
 import { conflict, notFound } from "../utils/api-error.js";
-import { generateUniqueSlug, sanitizeSlug } from "../utils/slug.utils.js";
+import { encodeBase62 } from "../utils/base62.js";
+import { normalizeToHandle } from "../utils/normalize.utils.js";
 
 export async function findAllUsers() {
   const users = await getAll();
@@ -24,6 +27,18 @@ export async function findById(id: number) {
   return user;
 }
 
+async function createUniqueUserHandle(name: string) {
+  const cleanHandle = normalizeToHandle(name);
+
+  // Get last row ID to construct fallback suffix
+  const lastUser = await getUserWithHighestId();
+
+  const nextId = (lastUser?.id ?? 0) + 1;
+  const hash = encodeBase62(nextId);
+
+  return `${cleanHandle}-${hash}`;
+}
+
 export async function createUser(data: CreateUserDTO) {
   // Check if the user already exists or not
   const existingUser = await findByEmail(data.email);
@@ -32,11 +47,19 @@ export async function createUser(data: CreateUserDTO) {
     throw conflict("User already exists");
   }
 
-  const resolvedSlug = data.slug?.trim()
-    ? sanitizeSlug(data.slug)
-    : generateUniqueSlug(data.name);
+  let userHandle = "";
+  if (data.handle) {
+    const existingUserHandle = await findByHandle(data.handle);
+    if (existingUserHandle) throw conflict("User handle already taken");
 
-  const user = await create({ ...data, slug: resolvedSlug });
+    userHandle = data.handle;
+  }
+
+  if (!userHandle) {
+    userHandle = await createUniqueUserHandle(data.name);
+  }
+
+  const user = await create({ ...data, handle: userHandle });
   return user;
 }
 
@@ -51,6 +74,11 @@ export async function updateUser(id: number, data: UpdateUserDTO) {
     if (existingUser) {
       throw conflict("User already exists");
     }
+  }
+
+  const exisitingHandle = data.handle ? findByHandle(data.handle) : null;
+  if (exisitingHandle) {
+    throw conflict("User handle already exists");
   }
 
   const updatedUser = await update(id, data);

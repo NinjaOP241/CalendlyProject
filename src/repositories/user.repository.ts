@@ -20,7 +20,7 @@ export async function findByEmail(email: string) {
   return user;
 }
 
-export async function create(data: CreateUserDTO & { slug: string }) {
+export async function create(data: CreateUserDTO & { handle: string }) {
   const user = await prisma.user.create({ data });
   return user;
 }
@@ -52,6 +52,25 @@ export async function updateGoogleRefreshToken(
     },
     data: {
       googleRefreshToken: refreshToken,
+    },
+  });
+}
+
+export async function findByHandle(handle: string) {
+  return await prisma.user.findUnique({
+    where: {
+      handle,
+    },
+  });
+}
+
+export async function getUserWithHighestId() {
+  return await prisma.user.findFirst({
+    orderBy: {
+      id: "desc",
+    },
+    select: {
+      id: true,
     },
   });
 }
